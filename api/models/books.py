@@ -8,7 +8,7 @@ class AuthorBase(BaseModel):
 class CategoryBase(BaseModel):
     name: str
 
-class Book(BaseModel):
+class BookOut(BaseModel):
     id: int  
     title: str
     isbn: str
@@ -35,7 +35,7 @@ class BookReview(BaseModel):
     rating: float
     review: str
 
-class BookResponse(Book):
+class BookResponse(BookOut):
     average_rating: float
     number_of_reviews: int
     reviews: List[BookReview]

@@ -13,8 +13,9 @@ router = APIRouter()
 
 
 
-@router.get("/books", response_model=list[dict], tags=["Books"])
+@router.get("/books", response_model=dict, tags=["Books"])
 def get_all_books(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    total_count = db.query(Book).count()
     books = db.query(Book).offset(skip).limit(limit).all()
     books_json = []
     for book in books:
@@ -34,10 +35,14 @@ def get_all_books(skip: int = 0, limit: int = 10, db: Session = Depends(get_db))
             "categories": categories
         }
         books_json.append(book_data)
-    return books_json
+    
+    return {
+        "total_count": total_count,
+        "books": books_json
+        }
 
 
-@router.get("/search-books", response_model=List[Book], tags=["Books"])
+@router.get("/search-books", response_model=List[BookOut], tags=["Books"])
 def search_books(
     category: Optional[str] = Query(None),
     author: Optional[str] = Query(None),
@@ -181,7 +186,7 @@ async def get_book_details(book_id: int, db: Session = Depends(get_db)):
 
 
 
-@router.get("/user/books/read", response_model=List[Book], tags=["Books"])
+@router.get("/user/books/read", response_model=List[BookOut], tags=["Books"])
 async def get_user_read_books(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Retrieve the list of books that the user has read."""
     
@@ -191,7 +196,7 @@ async def get_user_read_books(current_user: User = Depends(get_current_user), db
     return read_books
 
 
-@router.get("/user/books/to-read", response_model=List[Book], tags=["Books"])
+@router.get("/user/books/to-read", response_model=List[BookOut], tags=["Books"])
 async def get_user_to_read_books(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Retrieve the list of books that the user plans to read."""
     
