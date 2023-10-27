@@ -78,6 +78,7 @@ async def register(new_user: NewUser, db: Session = Depends(get_db)):
     # Create new user instance
     user = User(username=new_user.username, email=new_user.email)
     user.set_password(new_user.password)
+    print(user)
     
     # Add to database
     db.add(user)
