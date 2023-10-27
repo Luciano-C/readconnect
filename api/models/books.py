@@ -1,6 +1,6 @@
-from pydantic import BaseModel
-from datetime import datetime
-from typing import List
+from pydantic import BaseModel, Field
+from datetime import date
+from typing import List, Optional
 
 class AuthorBase(BaseModel):
     name: str
@@ -8,22 +8,22 @@ class AuthorBase(BaseModel):
 class CategoryBase(BaseModel):
     name: str
 
+
+
 class BookOut(BaseModel):
-    id: int  
+    _id: int  
     title: str
     isbn: str
     pageCount: int
-    publishedDate: datetime
+    publishedDate: Optional[str]  # Change this to a direct date type
     thumbnailUrl: str
     shortDescription: str
     longDescription: str
     status: str
     authors: List[AuthorBase]
     categories: List[CategoryBase]
-    
 
-    class Config:
-        from_attributes = True
+    
 
 
 class BookID(BaseModel):

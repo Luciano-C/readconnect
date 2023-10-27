@@ -6,6 +6,7 @@ from utils.get_db import get_db
 from typing import List, Optional
 from models.books import *
 from utils.get_current_user import get_current_user
+from datetime import datetime
 
 
 
@@ -21,8 +22,9 @@ def get_all_books(skip: int = 0, limit: int = 10, db: Session = Depends(get_db))
     for book in books:
         authors = [author.name for author in book.authors]
         categories = [category.name for category in book.categories]
+        
         book_data = {
-            "id": book._id,
+            "_id": book._id,
             "title": book.title,
             "isbn": book.isbn,
             "pageCount": book.pageCount,
@@ -57,18 +59,25 @@ def search_books(
     books_query = db.query(Book)
 
     # Filtering logic:
-    if category:
+    if category and category.strip():
         books_query = books_query.join(Book.categories).filter(Category.name == category)
-    if author:
-        books_query = books_query.join(Book.authors).filter(Author.name == author)
-    
-    if min_pages and max_pages:
-        books_query = books_query.filter(Book.pageCount.between(min_pages, max_pages))
 
-    if start_date and end_date:
+    if author and author.strip():
+        books_query = books_query.join(Book.authors).filter(Author.name == author)
+
+    if min_pages:
+        books_query = books_query.filter(Book.pageCount >= min_pages)
+    if max_pages:
+        books_query = books_query.filter(Book.pageCount <= max_pages)
+
+    if start_date and start_date.strip():
         start_date_dt = datetime.strptime(start_date, '%Y-%m-%d').date()
+        books_query = books_query.filter(Book.publishedDate >= start_date_dt)
+
+    if end_date and end_date.strip():
         end_date_dt = datetime.strptime(end_date, '%Y-%m-%d').date()
-        books_query = books_query.filter(Book.publishedDate.between(start_date_dt, end_date_dt))
+        books_query = books_query.filter(Book.publishedDate <= end_date_dt)
+
 
     # Ordering logic:
     if order_by == "title":
@@ -79,6 +88,10 @@ def search_books(
         books_query = books_query.order_by(Book.publishedDate.asc() if order == "asc" else Book.publishedDate.desc())
 
     books = books_query.all()
+    # Convert publishedDate of each book to string
+    for book in books:
+        if book.publishedDate:
+            book.publishedDate = book.publishedDate.strftime('%Y-%m-%d')
     return books
 
 
