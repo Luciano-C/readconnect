@@ -25,7 +25,7 @@ COPY --chown=fastapi . .
 COPY --chown=fastapi amazon.books.json .
 
 # Copy the entrypoint script
-COPY --chown=fastapi entrypoint.sh .
+COPY --chown=fastapi entrypoint.sh ./
 
 # Give execute permissions to the entrypoint script
 RUN chmod +x entrypoint.sh
