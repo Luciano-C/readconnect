@@ -21,7 +21,7 @@ class Book(Base):
 
     _id = Column(Integer, primary_key=True)
     title = Column(String(255), index=True)
-    isbn = Column(String(255), unique=True)
+    isbn = Column(String(255))
     pageCount = Column(Integer)
     publishedDate = Column(Date)
     thumbnailUrl = Column(String(255))
@@ -60,7 +60,7 @@ class User(Base):
     __tablename__ = 'users'
 
     _id = Column(Integer, primary_key=True, index=True)
-    username = Column(String(50), unique=True, index=True)
+    username = Column(String(50), index=True)
     email = Column(String(100), unique=True, index=True)
     _password = Column("password", String(255))
 

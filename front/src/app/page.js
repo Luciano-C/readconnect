@@ -60,7 +60,7 @@ export default function Home() {
       const { data } = await axios.get(url);
       return {
         books: data,
-        totalCount: data.length  // This assumes the server returns all matched books without pagination
+        totalCount: data.length  
       };
     } catch (error) {
       console.error("Failed to search books:", error.message);
@@ -96,8 +96,6 @@ export default function Home() {
 
   return (
     <div className="container mx-auto">
-      <h1 className="text-4xl mb-8">Books</h1>
-
       <div className="flex justify-center mb-4">
         <button className="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-opacity-50" onClick={() => setShowFilters(prev => !prev)}>
           Toggle Filters

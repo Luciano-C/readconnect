@@ -23,3 +23,14 @@ async def update_username(request: UpdateUsernameRequest, current_user: User = D
     db.commit()
 
     return {"message": "Username updated successfully"}
+
+
+@router.get("/user/profile", tags=["Users"], response_model=UserResponse)
+async def get_user_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Fetch the profile of the currently logged-in user."""
+    
+    user = db.query(User).filter(User._id == current_user._id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return UserResponse(username=user.username, email=user.email)

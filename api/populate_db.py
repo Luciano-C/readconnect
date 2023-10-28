@@ -40,23 +40,31 @@ for book_data in books_data:
         print("Book with no ISBN found. Assigning a unique identifier...")
         isbn = f"NOISBN-{uuid.uuid4()}"
 
-    # Handle Authors
+   
+    
     author_objects = []
-    for author_name in book_data["authors"]:
+    for author_name in author_objects:
         author = session.query(Author).filter_by(name=author_name).first()
-        if author is None:
+        if not author:
+            print(f"Author {author_name} not found. Adding to the database...")
             author = Author(name=author_name)
             session.add(author)
+        else:
+            print(f"Author {author_name} already exists. Skipping...")
+            continue
         author_objects.append(author)
     
     # Handle Categories
     category_objects = []
-    for category_name in book_data["categories"]:
+    for category_name in category_objects:
         category = session.query(Category).filter_by(name=category_name).first()
-        if category is None:
+        if not category:
+            print(f"Category {category_name} not found. Adding to the database...")
             category = Category(name=category_name)
             session.add(category)
-        category_objects.append(category)
+            category_objects.append(category)
+        else:
+            print(f"Category {category_name} already exists. Skipping...")
 
     # Create Book instance
     book = Book(
@@ -68,8 +76,8 @@ for book_data in books_data:
         shortDescription=book_data.get("shortDescription", ""),
         longDescription=book_data.get("longDescription", ""),
         status=book_data["status"],
-        authors=author_objects, 
-        categories=category_objects 
+        authors=list(set(author_objects)), 
+        categories=list(set(category_objects)) 
     )
 
     # Add the book to the session

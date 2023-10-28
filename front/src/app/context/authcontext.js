@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, createContext, useContext } from "react"
+import React, { useState, createContext, useContext, useEffect } from "react"
 import axios from "axios";
 import { useRouter } from 'next/navigation';
 
@@ -14,6 +14,8 @@ export const useAuthContext = () => {
 
 export default function AuthProvider ({ children }) {
     const router = useRouter();
+
+    
     
     // Variables
     const [token, setToken] = useState("");
@@ -21,7 +23,7 @@ export default function AuthProvider ({ children }) {
     // Actions
     const login = async (email, password) => {
         try {
-            const { data } = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/login`, { email, password });
+            const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/login`, { email, password });
             
             if (data.access_token) {
                 setToken(data.access_token)

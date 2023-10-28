@@ -165,8 +165,12 @@ async def get_book_details(book_id: int, db: Session = Depends(get_db)):
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
 
-    # Convert the authors to a list of strings (or another suitable format)
-    author_names = [author.name for author in book.authors]
+    
+    authors_list = [AuthorBase(name=author.name) for author in book.authors]
+    categories_list = [CategoryBase(name=category.name) for category in book.categories]
+
+    if book.publishedDate:
+            book.publishedDate = book.publishedDate.strftime('%Y-%m-%d')
 
     # Get reviews and ratings
     book_ratings = db.query(BookRatings).filter(BookRatings.book_id == book_id).all()
@@ -190,12 +194,32 @@ async def get_book_details(book_id: int, db: Session = Depends(get_db)):
         "shortDescription": book.shortDescription,
         "longDescription": book.longDescription,
         "status": book.status,
-        "authors": author_names,  
-        "categories": [category.name for category in book.categories],  # Similar adjustment for categories
+        "authors": authors_list,  
+        "categories": categories_list,  
         "average_rating": avg_rating,
         "number_of_reviews": len(book_ratings),
         "reviews": reviews
     }
+
+@router.delete("/books/delete/{book_id}", tags=["Books"])
+async def delete_book_from_lists(book_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Remove a book from the user's lists (either read or to-read)."""
+    
+    user_book_to_read = db.query(UserBooksToRead).filter(UserBooksToRead.user_id == user._id, UserBooksToRead.book_id == book_id).first()
+    
+    if user_book_to_read:
+        db.delete(user_book_to_read)
+        db.commit()
+        return {"message": "Book deleted from to-read list"}
+    
+    user_book_read = db.query(UserBooksRead).filter(UserBooksRead.user_id == user._id, UserBooksRead.book_id == book_id).first()
+    
+    if user_book_read:
+        db.delete(user_book_read)
+        db.commit()
+        return {"message": "Book deleted from read list"}
+
+    raise HTTPException(status_code=400, detail="Book not found in either list")
 
 
 
@@ -204,39 +228,97 @@ async def get_user_read_books(current_user: User = Depends(get_current_user), db
     """Retrieve the list of books that the user has read."""
     
     # Get the list of books from the database
-    read_books = db.query(Book).join(UserBooksRead, UserBooksRead.book_id == Book._id).filter(UserBooksRead.user_id == current_user._id).all()
+    read_books_orm = db.query(Book).join(UserBooksRead, UserBooksRead.book_id == Book._id).filter(UserBooksRead.user_id == current_user._id).all()
+
+    read_books = []
+    for book in read_books_orm:
+        # Convert publishedDate to string
+        published_date = book.publishedDate.strftime('%Y-%m-%d') if book.publishedDate else None
+        
+        authors_list = [AuthorBase(name=author.name) for author in book.authors]
+        categories_list = [CategoryBase(name=category.name) for category in book.categories]
+        
+        read_books.append(BookOut(
+            id=book._id,
+            title=book.title,
+            isbn=book.isbn,
+            pageCount=book.pageCount,
+            publishedDate=published_date,
+            thumbnailUrl=book.thumbnailUrl,
+            shortDescription=book.shortDescription,
+            longDescription=book.longDescription,
+            status=book.status,
+            authors=authors_list,
+            categories=categories_list
+        ))
 
     return read_books
-
 
 @router.get("/user/books/to-read", response_model=List[BookOut], tags=["Books"])
 async def get_user_to_read_books(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Retrieve the list of books that the user plans to read."""
     
     # Get the list of books from the database
-    to_read_books = db.query(Book).join(UserBooksToRead, UserBooksToRead.book_id == Book._id).filter(UserBooksToRead.user_id == current_user._id).all()
+    to_read_books_orm = db.query(Book).join(UserBooksToRead, UserBooksToRead.book_id == Book._id).filter(UserBooksToRead.user_id == current_user._id).all()
+
+    to_read_books = []
+    for book in to_read_books_orm:
+        # Convert publishedDate to string
+        published_date = book.publishedDate.strftime('%Y-%m-%d') if book.publishedDate else None
+
+        authors_list = [AuthorBase(name=author.name) for author in book.authors]
+        categories_list = [CategoryBase(name=category.name) for category in book.categories]
+        
+        to_read_books.append(BookOut(
+            id=book._id,
+            title=book.title,
+            isbn=book.isbn,
+            pageCount=book.pageCount,
+            publishedDate=published_date,
+            thumbnailUrl=book.thumbnailUrl,
+            shortDescription=book.shortDescription,
+            longDescription=book.longDescription,
+            status=book.status,
+            authors=authors_list,
+            categories=categories_list
+        ))
 
     return to_read_books
 
 
 
 @router.post("/books/{book_id}/review", tags=["Books"])
-async def add_or_update_review(book_id: int, rating_review: BookReviewAndRating, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def add_or_update_review(
+    book_id: int, 
+    rating_review: BookReviewAndRating, 
+    current_user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
     """Add or update a user's review and rating for a book."""
-    
+
     # Check if the user has already reviewed this book
-    existing_review = db.query(BookRatings).filter(BookRatings.user_id == current_user._id, BookRatings.book_id == book_id).first()
-    
+    existing_review = db.query(BookRatings).filter(
+        BookRatings.user_id == current_user._id, 
+        BookRatings.book_id == book_id
+    ).first()
+
     if existing_review:
         # Update the existing review and rating
         existing_review.rating = rating_review.rating
         existing_review.review = rating_review.review
+    
     else:
-        # Add a new review and rating
-        new_review = BookRatings(user_id=current_user._id, book_id=book_id, rating=rating_review.rating, review=rating_review.review)
+        # Add a new review and rating if it doesn't exist
+        new_review = BookRatings(
+            user_id=current_user._id, 
+            book_id=book_id, 
+            rating=rating_review.rating, 
+            review=rating_review.review
+        )
         db.add(new_review)
     
     db.commit()
+    return {"message": "Review and rating processed successfully"}
+
     
-    return {"message": "Review and rating added/updated successfully"}
 

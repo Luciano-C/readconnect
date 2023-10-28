@@ -5,3 +5,7 @@ from typing import List
 
 class UpdateUsernameRequest(BaseModel):
     new_username: str
+
+class UserResponse(BaseModel):
+    username: str
+    email: str

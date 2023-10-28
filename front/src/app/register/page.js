@@ -21,7 +21,7 @@ export default function RegisterPage() {
         }
 
         try {
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/register`, { username, email, password });
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/register`, { username, email, password });
             console.log(response)
             if (response.status === 200) {
                 router.push('/login');  

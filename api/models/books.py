@@ -11,11 +11,11 @@ class CategoryBase(BaseModel):
 
 
 class BookOut(BaseModel):
-    _id: int  
+    id: int  
     title: str
     isbn: str
     pageCount: int
-    publishedDate: Optional[str]  # Change this to a direct date type
+    publishedDate: Optional[str] 
     thumbnailUrl: str
     shortDescription: str
     longDescription: str
